@@ -49,3 +49,9 @@ def test_paired_bootstrap_reference(stats):
 
 def test_paired_bootstrap_identical_is_zero(stats):
     assert stats.paired_bootstrap([1, 0, 1], [1, 0, 1]) == (0.0, 0.0, 0.0)
+
+
+def test_paired_bootstrap_rejects_unpaired_lengths(stats):
+    # paired = same items in the same order; different lengths cannot be paired
+    with pytest.raises(ValueError):
+        stats.paired_bootstrap([1, 0, 1], [1, 0])

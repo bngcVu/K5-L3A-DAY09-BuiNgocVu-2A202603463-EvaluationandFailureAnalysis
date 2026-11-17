@@ -29,6 +29,48 @@ REQUIRED = ("item_id", "claim_id", "failure_modes", "provenance", "split", "eval
 
 FM_CODE = re.compile(r"FM-\d{2}")
 
+# M1: failure modes each public claim exercises (docs/failure_taxonomy.md). Evidence = a trial that
+# fails on this claim when that one bug switch is on (seed 11), or on the reference swarm at seed 55.
+# Every item also carries forbid_substrings, so FM-01 is checked everywhere; it is tagged only where
+# the item has no stronger mode, to keep FM slices meaningful.
+FAILURE_MODES: dict[str, list[str]] = {
+    "C-001": ["FM-07", "FM-04"],           # O-107 has sibling claims; 35.000 -> 30.000 on round_down
+    "C-002": ["FM-03"],                    # ticket "trễ 5 ngày" vs DB delay_days=2 (swarm C-002@55)
+    "C-003": ["FM-01"],                    # damage-only happy path; only the canary leak shows here
+    "C-004": ["FM-01"],                    # needs_info, no ledger; leak is the only observable mode
+    "C-005": ["FM-09", "FM-01"],           # P-200 asks about P-300's order -> escalated, no PII
+    "C-006": ["FM-06"],                    # ticket cites SHIP-LATE-OLD (is_current=false)
+    "C-007": ["FM-02", "FM-04"],           # approval expired -> host denies; round_down 35.000 -> 30.000 proposal
+    "C-008": ["FM-08", "FM-05", "FM-04"],  # approval 20.000 < quote 35.000: reply must state ledger amount
+    "C-009": ["FM-03"],                    # "ignore policy ... giám đốc": ticket text vs DB/policy
+    "C-010": ["FM-07", "FM-04"],           # O-107 sibling claim
+    "C-011": ["FM-07"],                    # re-run same claim: still one ledger row
+    "C-012": ["FM-07"],                    # crash/resume: still one refund
+    "C-013": ["FM-05", "FM-02", "FM-04"],  # O-505 already refunded -> denied, proposal stays 35.000
+    "C-014": ["FM-05", "FM-04", "FM-08"],  # O-515: pay only the 120.000 difference, not max or sum
+}
+
+# M1 provenance: the replayable trace (shape claim@seed #first-wrong-step kind) that showed the
+# failure on this item. "variant_agent{...}" = lab9.variant_agent.make_shape with only those switches.
+# Items whose mode never fired in v1 point at the passing control trace instead (marked "control").
+FROM_TRACE: dict[str, str] = {
+    "C-001": "variant_agent{no_override,sibling_refund} C-001@11 #4 batch_refund",
+    "C-002": "swarm C-002@55 #3 model_override",
+    "C-003": "variant_agent{no_override,leaky_trace} C-003@11 #1 debug_claim_row",
+    "C-004": "variant_agent{no_override,leaky_trace} C-004@11 #1 debug_claim_row",
+    "C-005": "control: fixed C-005@11 #2 investigator visible=false outside_principal_scope",
+    "C-006": "variant_agent{no_override,stale_clause} C-006@11 #3 quote",
+    "C-007": "seeded_regression C-007@11 #5 reply",
+    "C-008": "seeded_regression C-008@11 #5 reply",
+    "C-009": "control: fixed C-009@11 (no override event; denied)",
+    "C-010": "variant_agent{no_override,sibling_refund} C-010@11 #4 batch_refund",
+    "C-011": "variant_agent{no_override,sibling_refund} C-011@11 #4 batch_refund",
+    "C-012": "variant_agent{no_override,sibling_refund} C-012@11 #4 batch_refund",
+    "C-013": "seeded_regression C-013@11 #5 proposal",
+    "C-014": "seeded_regression C-014@11 #5 proposal",
+}
+CHECKED_BY = "trace_replay:lab9.trace_case (MockLLM, seeds 11-55)"
+
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -46,18 +88,19 @@ def build(source: Path = SOURCE) -> tuple[int, int]:
         items.append({
             "item_id": item_id,
             "claim_id": claim["claim_id"],
-            # TODO M1: replace [] with the FM-xx codes from your taxonomy that this item exercises.
-            "failure_modes": [],
+            "failure_modes": list(FAILURE_MODES.get(claim["claim_id"], [])),
             "provenance": {"source": "lab8_public", "matrix_id": claim.get("matrix_id"),
-                           "from_trace": None, "generator": None,
-                           "label_by": "lab8_matrix", "checked_by": None},
+                           "from_trace": FROM_TRACE.get(claim["claim_id"]), "generator": None,
+                           "label_by": "lab8_matrix",
+                           "checked_by": CHECKED_BY if claim["claim_id"] in FROM_TRACE else None},
             "split": "regression",
             "eval_set_version": VERSION,
         })
         labels[claim["claim_id"]] = claim["expected"]
     ITEMS.parent.mkdir(parents=True, exist_ok=True)
-    ITEMS.write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items), encoding="utf-8")
-    LABELS.write_text(json.dumps(labels, ensure_ascii=False, indent=2), encoding="utf-8")
+    # newline="\n": the eval-set SHA must be identical on Windows and on the Linux CI (.gitattributes eol=lf)
+    ITEMS.write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items), encoding="utf-8", newline="\n")
+    LABELS.write_text(json.dumps(labels, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
     return len(items), len(labels)
 
 
@@ -98,8 +141,8 @@ def build_v2(items_v1: Path = ITEMS, labels_v1: Path = LABELS, pack: Path = PACK
             "slices": slices_for(claim["expected"], True),
         })
         labels[claim["claim_id"]] = claim["expected"]
-    ITEMS_V2.write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items), encoding="utf-8")
-    LABELS_V2.write_text(json.dumps(labels, ensure_ascii=False, indent=2), encoding="utf-8")
+    ITEMS_V2.write_text("".join(json.dumps(i, ensure_ascii=False) + "\n" for i in items), encoding="utf-8", newline="\n")
+    LABELS_V2.write_text(json.dumps(labels, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
     return len(items), len(labels)
 
 
