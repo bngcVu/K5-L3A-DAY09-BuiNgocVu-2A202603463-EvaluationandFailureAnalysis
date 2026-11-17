@@ -26,5 +26,13 @@ src/reports/bonus_hidden.json
 # Instructor-only hidden pack. Never push it to this repo.
 src/eval/instructor/
 
+# AI agent skills / plugins installed locally (Claude Code, `npx skills`). Never push them.
+.claude/
+**/.claude/
+.agents/
+**/.agents/
+skills-lock.json
+CLAUDE.local.md
+
 
 
