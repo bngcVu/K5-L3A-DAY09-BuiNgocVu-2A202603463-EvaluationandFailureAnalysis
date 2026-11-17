@@ -10,6 +10,9 @@ pytestmark = pytest.mark.student
 
 @pytest.fixture(scope="module")
 def investigate():
+    # The Lab 8 CI (ci.yml) installs only requirements.txt and runs `-m student -k swarm`, which
+    # selects the swarm case below; lab9 needs requirements-lab9.txt, so skip there instead of erroring.
+    pytest.importorskip("pydantic_evals")
     from lab9.trace_case import investigate
 
     return investigate

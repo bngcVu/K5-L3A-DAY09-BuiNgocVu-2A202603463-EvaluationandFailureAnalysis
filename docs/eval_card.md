@@ -4,10 +4,10 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10.
 
 Mọi con số dưới đây lấy từ report do script sinh ra (`python -m lab9.eval`), không gõ tay. Chạy lại: `cd src && python -m lab9.eval --shape <shape> --out reports/<file>.json`.
 
-- **Run ID / eval set SHA:** baseline `E-swarm-20261117-7f19` (`src/reports/baseline_v1.json`) · eval set v1 sha `7f195607c9aa`.
+- **Run ID / eval set SHA:** baseline `E-swarm-20261117-d706` (`src/reports/baseline_v1.json`) · eval set v1 sha `d7069537a4c3`.
 - **Phiên bản:**
   - Code: commit `ac6fa7d` (M1–M4); grader `src/lab9/graders.py` cùng commit.
-  - Eval set v1, sha `7f195607c9aa`; `metric_spec_version` 1.0 (`src/config/metric_spec.yaml`).
+  - Eval set v1, sha `d7069537a4c3`; `metric_spec_version` 1.0 (`src/config/metric_spec.yaml`).
   - Seeds 11/22/33/44/55; LLM: MockLLM; Python 3.12 (CI chạy 3.13).
 - **Eval set:** v1, 14 item × 5 seed = 70 trial, nguồn `lab8_public` (ma trận T01–T14). Nhãn tách riêng ở `labels_v1.json`, không inline. Mỗi item có `failure_modes` (FM-01…FM-09) và `provenance.from_trace` trỏ tới trace có bước sai đầu tiên.
 - **Metric & ngưỡng** (`metric_spec.yaml`):
@@ -28,9 +28,9 @@ Mọi con số dưới đây lấy từ report do script sinh ra (`python -m lab
 
   | Report (run ID) | `pass_rate` | Δ `pass_rate` (CI 95%) | `refund_amount_correct` | Δ (CI 95%) | `reply_matches_ledger` | Gate |
   |---|---|---|---|---|---|---|
-  | baseline swarm `E-swarm-20261117-7f19` | 0.9857 | — | 0.9857 | — | 1.0 | merge khi so với chính nó |
-  | `fixed` `E-fixed-20261117-7f19` | 1.0 | +0.014 [+0.000, +0.043] | 1.0 | +0.014 [+0.000, +0.043] | 1.0 | **exit 0, merge** |
-  | `seeded_regression` `E-seeded_regression-20261117-7f19` | 0.7143 | **−0.271 [−0.500, −0.057]** | 0.8571 | −0.129 [−0.315, +0.000] | 0.7857 | **exit 1**, chặn ở `refund_amount_correct, pass_rate, reply_matches_ledger` |
+  | baseline swarm `E-swarm-20261117-d706` | 0.9857 | — | 0.9857 | — | 1.0 | merge khi so với chính nó |
+  | `fixed` `E-fixed-20261117-d706` | 1.0 | +0.014 [+0.000, +0.043] | 1.0 | +0.014 [+0.000, +0.043] | 1.0 | **exit 0, merge** |
+  | `seeded_regression` `E-seeded_regression-20261117-d706` | 0.7143 | **−0.271 [−0.500, −0.057]** | 0.8571 | −0.129 [−0.315, +0.000] | 0.7857 | **exit 1**, chặn ở `refund_amount_correct, pass_rate, reply_matches_ledger` |
 
   `seeded_regression` còn có `db_fact_kept` 0.9286, `pass_5` 0.7143, `cost_per_success` 81.2 (so với 49.6 của baseline). Ba metric này non-blocking nên chỉ cảnh báo. Lỗi rơi vào 25/70 trial: FM-03 ×5, FM-02 ×5, FM-08 ×5, FM-05 ×10 (`docs/failure_taxonomy.md`).
 - **Judge** (`docs/judge_audit.md`, replay, n = 100):
@@ -64,7 +64,7 @@ Mọi con số dưới đây lấy từ report do script sinh ra (`python -m lab
 
 ## v2 (M5–M6): slice gate và độ tin cậy
 
-- **Eval set v2:** 28 item (14 v1 + 14 adversarial của giảng viên), sha `e4a91c01b602`, 5 seed 11/22/33/44/55. Baseline `reports/baseline_v2.json`, run `E-swarm-20261117-e4a9`.
+- **Eval set v2:** 28 item (14 v1 + 14 adversarial của giảng viên), sha `0706c811de34`, 5 seed 11/22/33/44/55. Baseline `reports/baseline_v2.json`, run `E-swarm-20261117-0706`.
 - **Ánh xạ cơ chế tấn công → FM:** `src/config/fm_map.yaml`. Cả 8 cơ chế đều nằm trong taxonomy v1 (FM-02…FM-09), mỗi FM bị tấn công có ≥ 3 item.
 
 ### Slice nào bắt lỗi nào (`src/config/metric_spec_v2.yaml`, scorecard `lab9.mutation`: 3/3 chặn, 0 báo nhầm)
